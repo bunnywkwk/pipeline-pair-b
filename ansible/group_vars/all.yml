@@ -1,0 +1,19 @@
+---
+# ==============================================================================
+# PRECEDENCE LEVEL 1: LOWEST (group_vars)
+# These variables can be easily overridden by playbook vars or extra-vars.
+# ==============================================================================
+
+# Enable Level 1 Server Profile
+rhel10cis_level_1: true
+rhel10cis_level_2: false
+
+# Setup Audit configuration
+setup_audit: true
+run_audit: true
+
+# Tailoring: Use journald for logging
+rhel10cis_syslog: journald
+
+# Tailoring: Authselect custom profile name (Rule 5.3)
+rhel10cis_authselect_custom_profile_name: custom_pair_b_profile

@@ -1,0 +1,35 @@
+---
+- name: Phase 3 - CIS Security Hardening & Formatting
+  hosts: all
+  become: true
+  
+  # ==============================================================================
+  # PRECEDENCE LEVEL 2: MEDIUM (play vars)
+  # These variables override group_vars, but can be overridden by extra-vars.
+  # ==============================================================================
+  vars:
+    # Tailoring: Password aging
+    rhel10cis_pass_max_days: 90
+    rhel10cis_pass_min_days: 7
+    
+    # Tailoring: Login banner
+    rhel10cis_warning_banner: |
+      WARNING: Authorized Access Only!
+      This is a secure system built by Pair B.
+
+  tasks:
+    - name: Ensure ext4 filesystem exists on data disk 1 (/dev/sda)
+      community.general.filesystem:
+        fstype: ext4
+        dev: /dev/sda
+      ignore_errors: true # Fallback if disk names differ slightly based on bus
+
+    - name: Ensure ext4 filesystem exists on data disk 2 (/dev/sdb)
+      community.general.filesystem:
+        fstype: ext4
+        dev: /dev/sdb
+      ignore_errors: true
+      
+    - name: Include the RHEL10-CIS Hardening Role
+      ansible.builtin.include_role:
+        name: RHEL10-CIS

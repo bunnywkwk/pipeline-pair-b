@@ -1,0 +1,22 @@
+# Packer
+packer/output/
+output/
+*.iso
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/crash.log
+terraform/crash.*.log
+
+# Ansible
+ansible/inventory/hosts
+*.retry
+
+# Secrets & Passwords (NEVER COMMIT)
+*.pass
+*.pem
+*.key
+vault_pass
+.vault_pass
