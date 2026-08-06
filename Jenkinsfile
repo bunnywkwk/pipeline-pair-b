@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     parameters {
-        choice(name: 'ACTION', choices: ['ALL', 'PACKER_ONLY', 'TERRAFORM_ONLY', 'ANSIBLE_ONLY'], description: 'Select which stages of the pipeline to run.')
+        choice(name: 'ACTION', choices: ['ALL', 'SKIP_PACKER', 'PACKER_ONLY', 'TERRAFORM_ONLY', 'ANSIBLE_ONLY'], description: 'Select which stages of the pipeline to run.')
     }
 
     environment {
@@ -33,7 +33,7 @@ pipeline {
 
         stage('Terraform') {
             when {
-                expression { params.ACTION == 'ALL' || params.ACTION == 'TERRAFORM_ONLY' }
+                expression { params.ACTION == 'ALL' || params.ACTION == 'SKIP_PACKER' || params.ACTION == 'TERRAFORM_ONLY' }
             }
             steps {
                 dir('terraform') {
@@ -46,7 +46,7 @@ pipeline {
 
         stage('Ansible') {
             when {
-                expression { params.ACTION == 'ALL' || params.ACTION == 'ANSIBLE_ONLY' }
+                expression { params.ACTION == 'ALL' || params.ACTION == 'SKIP_PACKER' || params.ACTION == 'ANSIBLE_ONLY' }
             }
             steps {
                 dir('ansible') {
@@ -67,7 +67,7 @@ pipeline {
         
         stage('Audit') {
             when {
-                expression { params.ACTION == 'ALL' || params.ACTION == 'ANSIBLE_ONLY' }
+                expression { params.ACTION == 'ALL' || params.ACTION == 'SKIP_PACKER' || params.ACTION == 'ANSIBLE_ONLY' }
             }
             steps {
                 dir('ansible') {
