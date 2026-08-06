@@ -1,19 +1,13 @@
 ---
-# ==============================================================================
-# PRECEDENCE LEVEL 1: LOWEST (group_vars)
-# These variables can be easily overridden by playbook vars or extra-vars.
-# ==============================================================================
-
-# Enable Level 1 Server Profile
-rhel10cis_level_1: true
-rhel10cis_level_2: false
-
-# Setup Audit configuration
+# 1. Ensure Goss auditing runs after the script finishes
 setup_audit: true
 run_audit: true
 
-# Tailoring: Use journald for logging
+# 2. Tell the CIS script to use journald for logging
 rhel10cis_syslog: journald
 
-# Tailoring: Authselect custom profile name (Rule 5.3)
+# 3. Tell the CIS script to use a custom authselect profile
 rhel10cis_authselect_custom_profile_name: custom_pair_b_profile
+
+# 4. Fix NoneType bug in CIS script
+rhel10cis_sshd_allowusers: ""
