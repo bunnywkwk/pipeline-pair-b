@@ -13,8 +13,9 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                cleanWs()
-                // Because we wiped the workspace, we have to pull the code again!
+                // Wipe the workspace but EXCLUDE the heavy Packer golden image so we can reuse it!
+                cleanWs(deleteDirs: true, patterns: [[pattern: 'packer/output/**', type: 'EXCLUDE']])
+                // Pull the latest code again
                 checkout scm
             }
         }
