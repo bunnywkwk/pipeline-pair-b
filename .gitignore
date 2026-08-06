@@ -3,12 +3,18 @@ packer/output/
 output/
 *.iso
 
+# Audit Reports
+*.json
+
 # Terraform
 terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/crash.log
 terraform/crash.*.log
+# Terraform Generated SSH Keys
+terraform/id_ed25519
+terraform/id_ed25519.pub
 
 # Ansible
 ansible/inventory/hosts
@@ -18,5 +24,6 @@ ansible/inventory/hosts
 *.pass
 *.pem
 *.key
+vaultpass.txt
 vault_pass
 .vault_pass

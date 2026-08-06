@@ -18,8 +18,10 @@ source "qemu" "almalinux10" {
   cpus        = 2
 
   # CPU Passthrough and UEFI settings (Pair B constraints)
-  machine_type = "q35"
-  efi_boot     = true
+  machine_type      = "q35"
+  efi_boot          = true
+  efi_firmware_code = "/usr/share/edk2/ovmf/OVMF_CODE.fd"
+  efi_firmware_vars = "/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"
   qemuargs = [
     ["-cpu", "host"]
   ]

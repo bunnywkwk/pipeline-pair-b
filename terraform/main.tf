@@ -22,21 +22,33 @@ resource "libvirt_pool" "pool_b" {
   path = "/var/lib/libvirt/images/pool_b"
 }
 
+# Generate an SSH key
+resource "tls_private_key" "ssh_key" {
+  algorithm = "ED25519"
+}
+
+# Save the private key to a file
+resource "local_file" "private_key" {
+  content         = tls_private_key.ssh_key.private_key_openssh
+  filename        = "${path.module}/id_ed25519"
+  file_permission = "0600"
+}
+
+
 # ==============================================================================
 # CLOUD-INIT: Separate ISO files for each VM (SELinux workaround)
 # ==============================================================================
 resource "libvirt_cloudinit_disk" "commoninit" {
-  count          = 2
-  name           = "commoninit-pb-node-${count.index + 1}.iso"
-  pool           = libvirt_pool.pool_b.name
-  user_data      = <<EOF
+  count     = 2
+  name      = "commoninit-pb-node-${count.index + 1}.iso"
+  pool      = libvirt_pool.pool_b.name
+  user_data = <<EOF
 #cloud-config
-hostname: pb-node-${count.index + 1}
-ssh_pwauth: true
-chpasswd:
-  list: |
-     root:Buns123#
-  expire: false
+ssh_pwauth: false
+users:
+  - name: root
+    ssh_authorized_keys:
+      - ${tls_private_key.ssh_key.public_key_openssh}
 EOF
 }
 
@@ -75,12 +87,12 @@ resource "libvirt_domain" "pb_nodes" {
   name    = "pb-node-${count.index + 1}"
   memory  = "2048"
   vcpu    = 2
-  machine = "q35" 
-  
+  machine = "q35"
+
   cpu {
     mode = "host-passthrough"
   }
-  
+
   # UEFI firmware and nvram set explicitly
   firmware = "/usr/share/edk2/ovmf/OVMF_CODE.fd"
   nvram {
@@ -112,7 +124,7 @@ resource "libvirt_domain" "pb_nodes" {
 
   network_interface {
     network_name   = "default"
-    wait_for_lease = true 
+    wait_for_lease = true
   }
 
   console {
@@ -136,14 +148,14 @@ output "pb_node_2_ip" {
 
 # Generate Ansible Inventory Dynamically
 resource "local_file" "ansible_inventory" {
-  content = <<EOF
+  content  = <<EOF
 [all]
 pb-node-1 ansible_host=${libvirt_domain.pb_nodes[0].network_interface[0].addresses[0]}
 pb-node-2 ansible_host=${libvirt_domain.pb_nodes[1].network_interface[0].addresses[0]}
-
 [all:vars]
 ansible_user=root
-ansible_password=Buns123#
+ansible_ssh_private_key_file=../terraform/id_ed25519
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 EOF
   filename = "../ansible/inventory/hosts"
 }
