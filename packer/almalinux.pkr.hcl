@@ -16,6 +16,7 @@ source "qemu" "almalinux10" {
   format      = "qcow2"
   memory      = 4096
   cpus        = 2
+  headless    = true
 
   # CPU Passthrough and UEFI settings (Pair B constraints)
   machine_type      = "q35"
