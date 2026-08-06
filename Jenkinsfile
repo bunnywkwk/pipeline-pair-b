@@ -13,8 +13,8 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                // Wipe the workspace but EXCLUDE the heavy Packer golden image so we can reuse it!
-                cleanWs(deleteDirs: true, patterns: [[pattern: 'packer/output/**', type: 'EXCLUDE']])
+                // Wipe the workspace but EXCLUDE the heavy Packer golden image AND the Terraform state files so we can reuse them!
+                cleanWs(deleteDirs: true, patterns: [[pattern: 'packer/output/**', type: 'EXCLUDE'], [pattern: 'terraform/*.tfstate*', type: 'EXCLUDE'], [pattern: 'terraform/.terraform/**', type: 'EXCLUDE']])
                 // Pull the latest code again
                 checkout scm
             }
