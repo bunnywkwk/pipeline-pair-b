@@ -12,7 +12,7 @@ terraform {
 }
 
 provider "libvirt" {
-  uri = "qemu:///system"
+  uri = "qemu:///system?socket=/var/run/libvirt/libvirt-sock"
 }
 
 # Custom KVM storage pool named pool_b
