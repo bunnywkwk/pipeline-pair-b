@@ -53,6 +53,9 @@ pipeline {
                     // Temporarily inject the secret Jenkins password into a file so Ansible can read it
                     sh 'echo "$ANSIBLE_VAULT_PASS" > vaultpass.txt'
                     
+                    // Jenkins user doesn't have the role installed, so we must download it first!
+                    sh 'ansible-galaxy install -r requirements.yml'
+                    
                     // Run the CIS Hardening Script
                     sh 'ansible-playbook playbook.yml --vault-password-file vaultpass.txt -e "@group_vars/all.yml" -e "rhel10cis_pass_max_days=90"'
                     
