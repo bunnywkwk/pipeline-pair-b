@@ -27,3 +27,5 @@ ansible/inventory/hosts
 vaultpass.txt
 vault_pass
 .vault_pass
+
+*.pdf

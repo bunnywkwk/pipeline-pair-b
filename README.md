@@ -1,33 +1,55 @@
-# Pair B - Automated Infrastructure Pipeline
+# Pair B - Automated Infrastructure Pipeline (Manual Runbook)
 
 This repository contains the Infrastructure as Code (IaC) pipeline for **Pair B**, which automates the provisioning, creation, and security hardening of AlmaLinux 10 virtual machines.
 
-## Key Takeaways & Lessons Learned
+While this repository is fully automated via the `Jenkinsfile`, this guide provides step-by-step instructions on how to run the pipeline manually from your terminal for learning, testing, and debugging purposes.
 
-If you need to revisit this project later, here are the core concepts and fixes we implemented across the pipeline:
+*(Note: For conceptual explanations, architectural decisions, and key takeaways, please read the `packer-info.md` study guide).*
 
-### 1. Packer & Kickstart (The Build)
-*   **The OS:** We used `AlmaLinux 10`.
-*   **UEFI & Kickstart:** Since RHEL 10 mandates UEFI, we had to ensure Packer's QEMU builder booted with UEFI (`machine_type = "q35"` and `efi_boot = true`). The Kickstart file dynamically handles LVM partitioning (putting everything in `vg_sys_b`).
-*   **Kernel Panic Bug:** The default QEMU CPU emulation caused a kernel panic in AlmaLinux 10. We fixed this by forcing the host CPU type in Packer: `qemuargs = [["-cpu", "host"]]`.
+## Prerequisites
+Ensure your hypervisor is clean before starting. If you have orphaned volumes from previous runs, clean them up:
+```bash
+virsh pool-destroy pool_b
+virsh pool-undefine pool_b
+```
 
-### 2. Terraform (The Infrastructure)
-*   **Dynamic Inventory:** We used the `local_file` resource in Terraform to automatically write the generated IP addresses into `ansible/inventory/hosts`.
-*   **Escaping Variables:** *Crucial Lesson:* When writing Terraform templates, you must use a single `$` for interpolation. Using `$$` causes Terraform to literally escape the string instead of evaluating it, which broke our Ansible inventory!
-*   **Automated SSH Password:** Since we are using passwords instead of SSH keys for this lab, we injected `ansible_password=Buns123#` directly into the generated inventory via Terraform so Ansible can connect without `--ask-pass`.
-*   **Disk Naming:** When attaching additional SCSI data disks to a KVM VM using `libvirt`, they map to `/dev/sda` and `/dev/sdb` (since the virtio OS disk takes `/dev/vda`). 
+## Phase 1: Packer (The Golden Image)
+Packer will download the AlmaLinux ISO, boot it, and use our `kickstart.cfg` to format the LVM partitions and install the base OS.
 
-### 3. Ansible (The Hardening)
-*   **Host Key Checking:** Because Terraform spins up VMs with brand new IP addresses, SSH will reject the connection because the Host Keys are unknown. We fixed this by creating `ansible.cfg` and setting `host_key_checking = False`.
-*   **Variable Precedence:** We demonstrated three levels of precedence:
-    *   *Lowest:* `group_vars/all.yml`
-    *   *Medium:* `playbook.yml` vars block
-    *   *Highest:* `--extra-vars` via CLI (`-e`)
-*   **Authselect Fix:** The RHEL10-CIS role fails if you use the default `cis_example_profile` name. We fixed this by setting `rhel10cis_authselect_custom_profile_name` in our variables.
-*   **Ansible Vault:** All sensitive mock passwords were encrypted using `ansible-vault`. (Password used: `vaultpass123`).
+```bash
+cd packer/
+packer init .
+# We use -force to overwrite any existing output directory
+packer build -force almalinux.pkr.hcl
+```
+*Expected Result:* A `golden_image.qcow2` file will be generated inside `packer/output/`.
 
-## Git Ignore Strategy
-We have deliberately excluded the following from version control using `.gitignore`:
-*   Terraform state files (`*.tfstate`) - These contain raw secrets and should never be pushed!
-*   The generated `ansible/inventory/hosts` file - Because IPs are ephemeral.
-*   Packer `output/` directories - Because ISOs and golden images are too large for git.
+## Phase 2: Terraform (The Infrastructure)
+Terraform will take the golden image, copy it into a libvirt storage pool, spin up 2 VMs with 2 additional data disks each, and dynamically generate our Ansible inventory.
+
+```bash
+cd ../terraform/
+terraform init
+terraform apply -auto-approve
+```
+*Expected Result:* Two running VMs (`virsh list --all`) and a dynamically generated inventory file at `ansible/inventory/hosts` containing the VMs' new IP addresses.
+
+## Phase 3: Ansible (The CIS Hardening)
+Ansible will SSH into the running VMs and apply the strict Center for Internet Security (CIS) Level 1 rules, tailoring them to Pair B's specific constraints.
+
+```bash
+cd ../ansible/
+
+# 1. Download the RHEL10-CIS hardening role
+ansible-galaxy install -r requirements.yml
+
+# 2. Setup the vault password (mock password used: vaultpass123)
+echo "vaultpass123" > vaultpass.txt
+
+# 3. Run the playbook, overriding password aging to 30 days, and strictly enforcing Level 1
+ansible-playbook playbook.yml --vault-password-file vaultpass.txt -e "rhel10cis_pass_max_days=30" --skip-tags "level2-server,level2-workstation"
+
+# 4. Clean up the password file
+rm vaultpass.txt
+```
+*Expected Result:* The Ansible playbook will execute successfully, leaving the VMs fully hardened. A Goss audit will run at the end, outputting a JSON compliance report.

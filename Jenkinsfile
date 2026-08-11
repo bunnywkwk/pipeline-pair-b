@@ -58,7 +58,7 @@ pipeline {
                     sh 'ansible-galaxy install -r requirements.yml'
                     
                     // Run the CIS Hardening Script
-                    sh 'ansible-playbook playbook.yml --vault-password-file vaultpass.txt -e "@group_vars/all.yml" -e "rhel10cis_pass_max_days=90"'
+                    sh 'ansible-playbook playbook.yml --vault-password-file vaultpass.txt -e "rhel10cis_pass_max_days=30" --skip-tags "level2-server,level2-workstation"'
                     
                     // Delete the password file immediately after for security!
                     sh 'rm vaultpass.txt'

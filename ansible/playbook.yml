@@ -5,10 +5,16 @@
 
   # PRECEDENCE LEVEL 2: Playbook VARs ovverides group_vars
   vars:
-    # We turn this rule OFF so the CIS script doesn't accidentally lock out
-    # our root account and break our automated pipeline
-    rhel10cis_rule_5_4_2: false
-    rhel10cis_rule_5_1_20: false
+    # 1. Custom Login Banner (Task Tailoring Requirement)
+    rhel10cis_warning_banner: "WARNING: Authorized Access Only - Pair B System"
+    
+    # 2. No account lockouts on failed password attempts (Task Tailoring Requirement)
+    # We turn these rules OFF so the CIS script doesn't accidentally lock out
+    # our root and user accounts, which would break our automated pipeline.
+    # Note: These variable names are specific to RHEL10-CIS (Controls 5.3.2.1.1 to 5.3.2.1.3)
+    rhel10cis_rule_5_3_2_1_1: false
+    rhel10cis_rule_5_3_2_1_2: false
+    rhel10cis_rule_5_3_2_1_3: false
 
   # FORMAT DATA DISKS (Task Constraint)
   pre_tasks:
