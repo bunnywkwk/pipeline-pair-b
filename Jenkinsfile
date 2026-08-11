@@ -12,18 +12,20 @@ pipeline {
     }
 
     stages {
-        stage('Clean Workspace') {
+        stage('Prepare Workspace') {
             steps {
-                // Wipe the workspace but EXCLUDE the heavy Packer golden image AND the Terraform state files so we can reuse them!
-                cleanWs(deleteDirs: true, patterns: [[pattern: 'packer/output/**', type: 'EXCLUDE'], [pattern: 'terraform/*.tfstate*', type: 'EXCLUDE'], [pattern: 'terraform/.terraform/**', type: 'EXCLUDE']])
-                // Pull the latest code again
+                // 1. Safely pull the latest tracked code from GitHub first
                 checkout scm
+                
+                // 2. Forcefully clean leftover trash (like old logs) using core Git instead of the buggy cleanWs plugin.
+                // We strictly exclude the heavy Packer image and Terraform memory so they are preserved across builds!
+                sh 'git clean -ffdx -e packer/output -e terraform/.terraform -e terraform/*.tfstate*'
             }
         }
 
         stage('Packer') {
             when {
-                expression { params.REBUILD_IMAGE == true }
+                expression { params.REBUILD_IMAGE == true || !fileExists('packer/output/golden_image.qcow2') }
             }
             steps {
                 dir('packer') {
