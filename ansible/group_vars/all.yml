@@ -17,3 +17,7 @@ rhel10cis_level_2: false
 
 # 6. Bypass GPG Key Check (ISO doesn't import GPG keys by default)
 rhel10cis_rule_1_2_1_1: false
+
+# 7. Force Ansible to download the JSON audit reports back to the Jenkins server!
+fetch_audit_output: true
+audit_output_destination: "./"
