@@ -85,7 +85,7 @@ resource "libvirt_volume" "data_disk_2" {
 resource "libvirt_domain" "pb_nodes" {
   count   = 2
   name    = "pb-node-${count.index + 1}"
-  memory  = "2048"
+  memory  = "3072"
   vcpu    = 2
   machine = "q35"
 

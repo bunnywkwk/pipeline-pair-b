@@ -113,3 +113,25 @@ This document centralizes all bugs, unexpected behaviors, and troubleshooting st
     terraform apply -auto-approve
     ```
 *   **Justification:** Because our dynamic inventory relies on `ansible_password=Buns123#` to connect, Ansible permanently locked itself out of the VMs after the first run secured the SSH daemon. This is a core concept of immutable infrastructure: if a configuration run fails halfway through, you cannot re-run it because the VM's state has mutated. You must destroy the VMs and provision fresh ones.
+
+### Goss Audit Fails with `rc: 137`
+*   **The Problem:** At the very end of the Ansible playbook, the `Post Audit` failed randomly on one of the nodes with the message: `Module result deserialization failed... rc: 137`.
+*   **Why we needed to fix it:** The pipeline failed at the very finish line. Return code `137` in Linux means the process was terminated by the OOM (Out Of Memory) killer (`128 + 9 = SIGKILL`). The massive 711-test Goss audit spiked the RAM usage, causing the 2GB VM to run out of memory and the kernel to kill the SSH/Ansible python process.
+*   **The Fix:** In `terraform/main.tf`, we increased the VM memory allocation:
+    ```hcl
+    memory = "3072"
+    ```
+*   **Justification:** Bumping the RAM from 2GB to 3GB gives the VM enough headroom to comfortably compile the massive JSON audit report without triggering the Linux OOM killer.
+
+## 4. Jenkins Pipeline
+
+### The "Split Brain" Terraform State Mismatch
+*   **The Problem:** Running the Jenkins pipeline crashed during the Terraform Apply phase with `Error: storage pool 'pool_b' already exists`.
+*   **Why we needed to fix it:** We manually executed the `virsh pool-destroy` and `pool-undefine` commands on our local laptop terminal to delete the infrastructure. However, the Jenkins workspace still retained a corrupted/out-of-sync `terraform.tfstate` file. 
+*   **The Fix:**
+    ```bash
+    # Wipe the corrupted memory from Jenkins' isolated workspace
+    sudo rm -f /var/lib/jenkins/workspace/Pair-B-Pipeline/terraform/*.tfstate*
+    ```
+*   **Justification:** When we deleted the physical VMs manually, Jenkins' local state file didn't know about it. Because Jenkins bypassed `terraform destroy` but the physical resources were gone, Terraform suffered a "split brain" mismatch between its memory and physical reality. By forcefully deleting Jenkins' local `.tfstate` files, we wipe its corrupted memory. This forces Jenkins to properly treat the environment as a completely blank slate. 
+*   **Prevention Loop:** *Never* mix manual laptop terminal commands with automated Jenkins pipelines on the same hypervisor! If you build infrastructure via Jenkins, you **must** destroy it via Jenkins (using your new `DESTROY_AND_REBUILD` parameter checkbox) so the `.tfstate` files remain perfectly synchronized!
