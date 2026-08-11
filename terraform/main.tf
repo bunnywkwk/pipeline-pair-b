@@ -49,6 +49,12 @@ users:
   - name: root
     ssh_authorized_keys:
       - ${tls_private_key.ssh_key.public_key_openssh}
+  - name: sysadmin
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: wheel
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${tls_private_key.ssh_key.public_key_openssh}
 EOF
 }
 
