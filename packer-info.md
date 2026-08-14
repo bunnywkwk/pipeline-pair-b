@@ -393,8 +393,8 @@ Here is how the INI format works for Ansible:
 Out of the box, a fresh installation of Linux is inherently insecure. The **Center for Internet Security (CIS)** publishes massive, 500-page "Benchmarks" that list hundreds of specific rules on how to lock down an operating system to enterprise-grade security.
 
 - **The Ansible CIS Role (The Robot):** Instead of you manually typing 500 commands to fix permissions and disable services, the open-source CIS role automates the entire PDF. By default, when you include this role in your playbook, it attempts to forcefully apply **every single rule**.
-- **Tailoring (The Steering Wheel):** Not every rigid security rule fits every business. For example, CIS Rule 5.4.2 says to permanently lock an account after 3 failed password attempts. However, Pair B constraints dictate *no account lockouts* because it breaks automated pipelines. 
-- By setting `rhel10cis_rule_5_4_2: false` in your playbook, you are **Tailoring**. You are telling the automated robot: *"Stop! Do not run this specific rule. I am intentionally overriding it because of my business needs."*
+- **Tailoring (The Steering Wheel):** Not every rigid security rule fits every business. For example, CIS Rule 5.3.2.1.1 says to permanently lock an account after 3 failed password attempts. However, Pair B constraints dictate *no account lockouts* because it breaks automated pipelines. 
+- By setting `rhel10cis_rule_5_3_2_1_1: false` in your playbook, you are **Tailoring**. You are telling the automated robot: *"Stop! Do not run this specific rule. I am intentionally overriding it because of my business needs."*
 
 ## 15. Ansible Variable Precedence & `group_vars/all.yml`
 
@@ -407,7 +407,7 @@ Your pipeline task requires you to prove you understand how Ansible decides whic
    - **Why separate?** Separation of concerns. Think of `playbook.yml` as your **action verbs** (run this role, format this disk) and `all.yml` as your **data nouns** (settings). If you put 150 CIS overrides in the playbook, it becomes unreadable. `group_vars/all.yml` applies settings automatically to every server in the `[all]` group.
    - **What's inside?** Pair B settings like `rhel10cis_syslog: journald` and running the Goss audit.
 2. **Level 2 (Medium Precedence - `playbook.yml` `vars:`):**
-   - Variables placed directly in the playbook override `group_vars`. This is where you smartly disabled `rhel10cis_rule_5_4_2` to prevent account lockouts.
+   - Variables placed directly in the playbook override `group_vars`. This is where you smartly disabled `rhel10cis_rule_5_3_2_1_1` to prevent account lockouts.
 3. **Level 3 (Highest Precedence - Command Line `-e`):**
    - Variables passed via `-e` in the Jenkinsfile override everything else. This is where you put the password aging requirement (`-e "rhel10cis_pass_max_days=90"`).
 
