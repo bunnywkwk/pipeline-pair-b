@@ -537,3 +537,32 @@ We use Ansible `pre_tasks` to format them *before* the main roles run:
 3. It mounts them to the server so they are usable.
 
 By putting this in `pre_tasks`, we guarantee the hard drives are fully operational before the heavy CIS security robot (`roles:`) takes over to lock down the OS!
+
+## 25. How to Defend Ansible `pre_tasks` in a Project Review
+
+**Question:** What is the purpose of `pre_tasks` in a playbook, is it standard practice to declare it there, and how do I defend it to my mentor?
+
+**Answer:**
+`pre_tasks` is a dedicated execution block in Ansible that is guaranteed to run **BEFORE** any `roles` or standard `tasks` start.
+
+- **Standard Practice:** Yes! In enterprise automation, whenever you must perform hardware preparation, enable package repositories, or mount storage *before* an application or security role takes over, you declare those prerequisites in `pre_tasks`.
+- **The Defense:** *"We declared disk formatting in `pre_tasks` because the data disks provisioned by Terraform were raw, unformatted digital metal. The `RHEL10-CIS` hardening role contains audit tasks that inspect file permissions on mounted drives. If we didn't format and mount the disks in `pre_tasks` BEFORE the CIS role started, the CIS script would throw errors when attempting to secure unformatted storage. Using `pre_tasks` guarantees hardware readiness before security enforcement."*
+
+## 26. Deep Dive: SCSI Controllers & `ext4` vs FAT32 vs XFS Filesystems
+
+**Question:** What is SCSI in our Terraform build, and how does `ext4` compare to FAT32 and XFS?
+
+**Answer:**
+
+### 1. What is SCSI?
+SCSI (Small Computer System Interface, pronounced *"Scuzzy"*) is a physical hardware controller standard used in real enterprise servers. 
+- **VirtIO (KVM Default):** Disks pretend to be virtual drives (`/dev/vda`, `/dev/vdb`).
+- **SCSI (Pair B Constraint):** The hypervisor emulates physical hardware controllers, causing Linux to see them as traditional drives (`/dev/sda`, `/dev/sdb`).
+- **The Defense:** *"While KVM defaults to VirtIO (`/dev/vda`), Pair B explicitly configured the storage bus to `scsi` in Terraform to prove our ability to customize hypervisor virtual hardware layers and force the OS to map the data disks as traditional `/dev/sda` and `/dev/sdb` devices."*
+
+### 2. Filesystem Comparison (`ext4` vs FAT32 vs XFS)
+A filesystem is a blueprint that tells the Operating System how to organize binary data on a disk.
+
+- **FAT32:** Ancient, simple format used for USB thumb drives and UEFI Boot (`/boot/efi`). Universally understood by motherboard BIOS, but lacks Linux permissions and has a 4GB maximum file size limit.
+- **`ext4` (Our Data Disks):** The classic, rock-solid Linux standard filesystem. Supports journaling (prevents data corruption on power loss), standard POSIX Linux file permissions (`chmod`), and file sizes up to 16TB.
+- **XFS (Our Root OS Disk):** The Red Hat / AlmaLinux default filesystem for OS partitions. Designed for massive enterprise storage arrays and high-speed parallel file operations.
